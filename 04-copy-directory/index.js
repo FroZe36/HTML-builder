@@ -1,5 +1,6 @@
 const path = require('path');
-const { copyFile, mkdir, readdir, rm } = require('fs').promises;
+const { copyFile, mkdir, readdir, rm, readFile, writeFile } =
+  require('fs').promises;
 
 async function copyDir() {
   try {
@@ -9,12 +10,22 @@ async function copyDir() {
     });
     const files = await readdir(path.join(__dirname, 'files'));
     const copyFiles = await readdir(path.join(projectFolder));
-    const filesToAdd = files.filter((file) => !copyFiles.includes(file));
+    files.forEach(async (file) => {
+      const pathFilePath = path.join(__dirname, 'files', file);
+      const copyFilePath = path.join(projectFolder, file);
+
+      const fileContent = await readFile(pathFilePath, 'utf-8');
+      const copyFileContent = await readFile(copyFilePath, 'utf-8');
+
+      if (copyFileContent !== fileContent) {
+        await writeFile(copyFilePath, fileContent);
+      }
+    });
     const filesToDelete = copyFiles.filter((file) => !files.includes(file));
     filesToDelete.forEach((file) => {
       rm(path.join(__dirname, 'files-copy', file));
     });
-    filesToAdd.forEach((file) => {
+    files.forEach((file) => {
       copyFile(
         path.join(__dirname, 'files', file),
         path.join(__dirname, 'files-copy', file),
